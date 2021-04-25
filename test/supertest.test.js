@@ -14,7 +14,7 @@ describe('request(url)', function () {
       const url = 'http://localhost:' + s.address().port;
       request(url)
         .get('/')
-        .expect(1 + 1, 1)
+        .expect(1 + 1, 2)
         .end(done);
     });
   });
