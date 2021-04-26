@@ -8,7 +8,7 @@ import * as bodyParser from 'body-parser'
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 function shouldIncludeStackWithThisFile(err) {
-  expect(err.stack).toMatch(/test\/supertest.js:/)
+  expect(err.stack).toMatch(/test\/supertest.test.js:/)
   expect(err.stack.startsWith(err.name + ':')).toBeTruthy()
 }
 
@@ -693,7 +693,7 @@ describe('request(app)', function () {
             throw new Error('failed');
           })
           .end(function (err) {
-            err.message.should.equal('failed');
+            expect(err.message).toEqual('failed')
             shouldIncludeStackWithThisFile(err);
             done();
           });
@@ -719,7 +719,7 @@ describe('request(app)', function () {
             return new Error('some descriptive error');
           })
           .end(function (err) {
-            err.message.should.equal('some descriptive error');
+            expect(err.message).toEqual('some descriptive error')
             shouldIncludeStackWithThisFile(err);
             expect(err instanceof Error).toBeTruthy()
             done();
