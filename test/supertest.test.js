@@ -369,7 +369,7 @@ describe('request(app)', function () {
 
   describe('.expect(status)', function () {
     it('should handle connection error', function (done) {
-      const req = request.agent('http://localhost:1234');
+      const req = new request.agent('http://localhost:1234');
 
       req
         .get('/')
@@ -867,7 +867,7 @@ describe('request(app)', function () {
 
 describe('request.agent(app)', function () {
   const app = express();
-  const agent = request.agent(app)
+  const agent = new request.agent(app)
     .set('header', 'hey');
 
   app.use(cookieParser());
@@ -909,7 +909,7 @@ describe('request.agent(app)', function () {
 describe('agent.host(host)', function () {
   it('should set request hostname', function (done) {
     const app = express();
-    const agent = request.agent(app);
+    const agent = new request.agent(app);
 
     app.get('/', function (req, res) {
       res.send({ hostname: req.hostname });
