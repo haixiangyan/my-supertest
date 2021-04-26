@@ -1,9 +1,11 @@
 import express from 'express'
-import request, {agent} from "../lib";
+import request from "../lib";
 import * as path from 'path'
 import * as https from 'https'
 import * as fs from 'fs'
 import * as bodyParser from 'body-parser'
+import cookieParser from 'cookie-parser'
+import * as nock from 'nock'
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
@@ -367,7 +369,7 @@ describe('request(app)', function () {
 
   describe('.expect(status)', function () {
     it('should handle connection error', function (done) {
-      const req = agent('http://localhost:1234');
+      const req = request.agent('http://localhost:1234');
 
       req
         .get('/')
@@ -863,3 +865,393 @@ describe('request(app)', function () {
   });
 });
 
+describe('request.agent(app)', function () {
+  const app = express();
+  const agent = request.agent(app)
+    .set('header', 'hey');
+
+  app.use(cookieParser());
+
+  app.get('/', function (req, res) {
+    res.cookie('cookie', 'hey');
+    res.send();
+  });
+
+  app.get('/return_cookies', function (req, res) {
+    if (req.cookies.cookie) res.send(req.cookies.cookie);
+    else res.send(':(');
+  });
+
+  app.get('/return_headers', function (req, res) {
+    if (req.get('header')) res.send(req.get('header'));
+    else res.send(':(');
+  });
+
+  it('should save cookies', function (done) {
+    agent
+      .get('/')
+      .expect('set-cookie', 'cookie=hey; Path=/', done);
+  });
+
+  it('should send cookies', function (done) {
+    agent
+      .get('/return_cookies')
+      .expect('hey', done);
+  });
+
+  it('should send global agent headers', function (done) {
+    agent
+      .get('/return_headers')
+      .expect('hey', done);
+  });
+});
+
+describe('agent.host(host)', function () {
+  it('should set request hostname', function (done) {
+    const app = express();
+    const agent = request.agent(app);
+
+    app.get('/', function (req, res) {
+      res.send({ hostname: req.hostname });
+    });
+
+    agent
+      .host('something.test')
+      .get('/')
+      .end(function (err, res) {
+        if (err) return done(err);
+        expect(res.body.hostname).toEqual('something.test')
+        done();
+      });
+  });
+});
+
+describe('.<http verb> works as expected', function () {
+  it('.delete should work', function (done) {
+    const app = express();
+    app.delete('/', function (req, res) {
+      res.sendStatus(200);
+    });
+
+    request(app)
+      .delete('/')
+      .expect(200, done);
+  });
+  it('.del should work', function (done) {
+    const app = express();
+    app.delete('/', function (req, res) {
+      res.sendStatus(200);
+    });
+
+    request(app)
+      .del('/')
+      .expect(200, done);
+  });
+  it('.get should work', function (done) {
+    const app = express();
+    app.get('/', function (req, res) {
+      res.sendStatus(200);
+    });
+
+    request(app)
+      .get('/')
+      .expect(200, done);
+  });
+  it('.post should work', function (done) {
+    const app = express();
+    app.post('/', function (req, res) {
+      res.sendStatus(200);
+    });
+
+    request(app)
+      .post('/')
+      .expect(200, done);
+  });
+  it('.put should work', function (done) {
+    const app = express();
+    app.put('/', function (req, res) {
+      res.sendStatus(200);
+    });
+
+    request(app)
+      .put('/')
+      .expect(200, done);
+  });
+  it('.head should work', function (done) {
+    const app = express();
+    app.head('/', function (req, res) {
+      res.statusCode = 200;
+      res.set('Content-Encoding', 'gzip');
+      res.set('Content-Length', '1024');
+      res.status(200);
+      res.end();
+    });
+
+    request(app)
+      .head('/')
+      .set('accept-encoding', 'gzip, deflate')
+      .end(function (err, res) {
+        if (err) return done(err);
+        expect(res.statusCode).toEqual(200)
+        expect(res.headers['content-length']).toEqual('1024')
+        done();
+      });
+  });
+});
+
+describe('assert ordering by call order', function () {
+  it('should assert the body before status', function (done) {
+    const app = express();
+
+    app.set('json spaces', 0);
+
+    app.get('/', function (req, res) {
+      res.status(500).json({ message: 'something went wrong' });
+    });
+
+    request(app)
+      .get('/')
+      .expect('hey')
+      .expect(200)
+      .end(function (err, res) {
+        expect(err.message).toEqual('expected \'hey\' response body, '
+          + 'got \'{"message":"something went wrong"}\'')
+        shouldIncludeStackWithThisFile(err);
+        done();
+      });
+  });
+
+  it('should assert the status before body', function (done) {
+    const app = express();
+
+    app.set('json spaces', 0);
+
+    app.get('/', function (req, res) {
+      res.status(500).json({ message: 'something went wrong' });
+    });
+
+    request(app)
+      .get('/')
+      .expect(200)
+      .expect('hey')
+      .end(function (err, res) {
+        expect(err.message).toEqual('expected 200 "OK", got 500 "Internal Server Error"');
+        shouldIncludeStackWithThisFile(err);
+        done();
+      });
+  });
+
+  it('should assert the fields before body and status', function (done) {
+    const app = express();
+
+    app.set('json spaces', 0);
+
+    app.get('/', function (req, res) {
+      res.status(200).json({ hello: 'world' });
+    });
+
+    request(app)
+      .get('/')
+      .expect('content-type', /html/)
+      .expect('hello')
+      .end(function (err, res) {
+        expect(err.message).toEqual('expected "content-type" matching /html/, '
+          + 'got "application/json; charset=utf-8"');
+        shouldIncludeStackWithThisFile(err);
+        done();
+      });
+  });
+
+  it('should call the expect function in order', function (done) {
+    const app = express();
+
+    app.get('/', function (req, res) {
+      res.status(200).json({});
+    });
+
+    request(app)
+      .get('/')
+      .expect(function (res) {
+        res.body.first = 1;
+      })
+      .expect(function (res) {
+        expect(res.body.first === 1).toBeTruthy()
+        res.body.second = 2;
+      })
+      .end(function (err, res) {
+        if (err) {
+          return done(err);
+        }
+        expect(res.body.first === 1).toBeTruthy()
+        expect(res.body.second === 2).toBeTruthy()
+        done();
+      });
+  });
+
+  it('should call expect(fn) and expect(status, fn) in order', function (done) {
+    const app = express();
+
+    app.get('/', function (req, res) {
+      res.status(200).json({});
+    });
+
+    request(app)
+      .get('/')
+      .expect(function (res) {
+        res.body.first = 1;
+      })
+      .expect(200, function (err, res) {
+        expect(err === null).toBeTruthy()
+        expect(res.body.first === 1).toBeTruthy()
+        done();
+      });
+  });
+
+  it('should call expect(fn) and expect(header,value) in order', function (done) {
+    const app = express();
+
+    app.get('/', function (req, res) {
+      res
+        .set('X-Some-Header', 'Some value')
+        .send();
+    });
+
+    request(app)
+      .get('/')
+      .expect('X-Some-Header', 'Some value')
+      .expect(function (res) {
+        res.headers['x-some-header'] = '';
+      })
+      .expect('X-Some-Header', '')
+      .end(done);
+  });
+
+  it('should call expect(fn) and expect(body) in order', function (done) {
+    const app = express();
+
+    app.get('/', function (req, res) {
+      res.json({ somebody: 'some body value' });
+    });
+
+    request(app)
+      .get('/')
+      .expect(/some body value/)
+      .expect(function (res) {
+        res.body.somebody = 'nobody';
+      })
+      .expect(/some body value/) // res.text should not be modified.
+      .expect({ somebody: 'nobody' })
+      .expect(function (res) {
+        res.text = 'gone';
+      })
+      .expect('gone')
+      .expect(/gone/)
+      .expect({ somebody: 'nobody' }) // res.body should not be modified
+      .expect('gone', done);
+  });
+});
+
+describe('request.get(url).query(vals) works as expected', function () {
+  it('normal single query string value works', function (done) {
+    const app = express();
+    app.get('/', function (req, res) {
+      res.status(200).send(req.query.val);
+    });
+
+    request(app)
+      .get('/')
+      .query({ val: 'Test1' })
+      .expect(200, function (err, res) {
+        expect(res.text).toEqual('Test1')
+        done();
+      });
+  });
+
+  it('array query string value works', function (done) {
+    const app = express();
+    app.get('/', function (req, res) {
+      res.status(200).send(Array.isArray(req.query.val));
+    });
+
+    request(app)
+      .get('/')
+      .query({ 'val[]': ['Test1', 'Test2'] })
+      .expect(200, function (err, res) {
+        expect(res.req.path).toEqual('/?val%5B%5D=Test1&val%5B%5D=Test2')
+        expect(res.text).toEqual('true')
+        done();
+      });
+  });
+
+  it('array query string value work even with single value', function (done) {
+    const app = express();
+    app.get('/', function (req, res) {
+      res.status(200).send(Array.isArray(req.query.val));
+    });
+
+    request(app)
+      .get('/')
+      .query({ 'val[]': ['Test1'] })
+      .expect(200, function (err, res) {
+        expect(res.req.path).toEqual('/?val%5B%5D=Test1');
+        expect(res.text).toEqual('true');
+        done();
+      });
+  });
+
+  it('object query string value works', function (done) {
+    const app = express();
+    app.get('/', function (req, res) {
+      res.status(200).send(req.query.val.test);
+    });
+
+    request(app)
+      .get('/')
+      .query({ val: { test: 'Test1' } })
+      .expect(200, function (err, res) {
+        expect(res.text).toEqual('Test1');
+        done();
+      });
+  });
+
+  it('handles unknown errors', function (done) {
+    const app = express();
+
+    nock.disableNetConnect();
+
+    app.get('/', function (req, res) {
+      res.status(200).send('OK');
+    });
+
+    request(app)
+      .get('/')
+      // This expect should never get called, but exposes this issue with other
+      // errors being obscured by the response assertions
+      // https://github.com/visionmedia/supertest/issues/352
+      .expect(200)
+      .end(function (err, res) {
+        expect(err.__proto__.name).toEqual('Error')
+        expect(err.message).toMatch(/Nock: Disallowed net connect/)
+        shouldIncludeStackWithThisFile(err);
+        done();
+      });
+
+    nock.restore();
+  });
+
+  it('should assert using promises', function (done) {
+    const app = express();
+
+    app.get('/', function (req, res) {
+      res.status(400).send({ promise: true });
+    });
+
+    request(app)
+      .get('/')
+      .expect(400)
+      .then((res) => {
+        expect(res.body.promise).toBeTruthy()
+        done();
+      });
+  });
+});
