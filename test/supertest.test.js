@@ -1,5 +1,5 @@
 import express from 'express'
-import request from "../lib";
+import request, {agent} from "../lib";
 import * as path from 'path'
 import * as https from 'https'
 import * as fs from 'fs'
@@ -367,13 +367,13 @@ describe('request(app)', function () {
 
   describe('.expect(status)', function () {
     it('should handle connection error', function (done) {
-      const req = request.agent('http://localhost:1234');
+      const req = agent('http://localhost:1234');
 
       req
         .get('/')
         .expect(200)
         .end(function (err, res) {
-          expect(err.message).toEqual('ECONNREFUSED: Connection refused')
+          expect(err.message).toEqual('connect ECONNREFUSED 127.0.0.1:1234')
           done();
         });
     });
@@ -707,7 +707,6 @@ describe('request(app)', function () {
               return 'some descriptive error';
             })
             .end(function (err) {
-              console.log('err', err)
               expect(err).toBeFalsy()
               done();
             });
