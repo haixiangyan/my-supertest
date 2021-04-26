@@ -25,8 +25,7 @@ describe('request(url)', function () {
       const url = 'http://localhost:' + s.address().port;
       request(url)
         .get('/')
-        .expect(1 + 1, 2)
-        .end(done);
+        .expect('hello', done);
     });
   });
 
@@ -359,7 +358,7 @@ describe('request(app)', function () {
         .get('/')
         .expect(404)
         .end(function (err, res) {
-          expect(err.message).toEqual('我想要的是 404 "Not Found", 但是你给了我 200 "OK"')
+          expect(err.message).toEqual('expected 404 "Not Found", got 200 "OK"')
           shouldIncludeStackWithThisFile(err);
           done();
         });
@@ -420,7 +419,7 @@ describe('request(app)', function () {
           .get('/')
           .expect(200, '')
           .end(function (err, res) {
-            expect(err.message).toEqual('我想要的是 \'\' response body, 但是你给了我 \'foo\'')
+            expect(err.message).toEqual('expected \'\' response body, got \'foo\'')
             shouldIncludeStackWithThisFile(err);
             done();
           });
@@ -442,7 +441,7 @@ describe('request(app)', function () {
         .get('/')
         .expect('hey')
         .end(function (err, res) {
-          expect(err.message).toEqual('我想要的是 \'hey\' response body, 但是你给了我 \'{"foo":"bar"}\'')
+          expect(err.message).toEqual('expected \'hey\' response body, got \'{"foo":"bar"}\'')
           shouldIncludeStackWithThisFile(err);
           done();
         });
@@ -462,7 +461,7 @@ describe('request(app)', function () {
         .expect(200)
         .expect('hey')
         .end(function (err, res) {
-          expect(err.message).toEqual('我想要的是 200 "OK", 但是你给了我 500 "Internal Server Error"')
+          expect(err.message).toEqual('expected 200 "OK", got 500 "Internal Server Error"')
           shouldIncludeStackWithThisFile(err);
           done();
         });
@@ -495,7 +494,7 @@ describe('request(app)', function () {
         .get('/')
         .expect({ foo: 'baz' })
         .end(function (err, res) {
-          expect(err.message).toEqual('我想要的是 { foo: \'baz\' } response body, 但是你给了我 { foo: \'bar\' }')
+          expect(err.message).toEqual('expected { foo: \'baz\' } response body, got { foo: \'bar\' }')
           shouldIncludeStackWithThisFile(err);
 
           request(app)
@@ -527,7 +526,7 @@ describe('request(app)', function () {
         .get('/')
         .expect({ stringValue: 'foo', numberValue: 3, nestedObject: { innerString: 5 } })
         .end(function (err, res) {
-          expect(err.message.replace(/[^a-zA-Z]/g, '')).toEqual('我想要的是 {\n  stringValue: \'foo\',\n  numberValue: 3,\n  nestedObject: { innerString: 5 }\n} response body, 但是你给了我 {\n  stringValue: \'foo\',\n  numberValue: 3,\n  nestedObject: { innerString: \'5\' }\n}'.replace(/[^a-zA-Z]/g, ''))
+          expect(err.message.replace(/[^a-zA-Z]/g, '')).toEqual('expected {\n  stringValue: \'foo\',\n  numberValue: 3,\n  nestedObject: { innerString: 5 }\n} response body, got {\n  stringValue: \'foo\',\n  numberValue: 3,\n  nestedObject: { innerString: \'5\' }\n}'.replace(/[^a-zA-Z]/g, ''))
           shouldIncludeStackWithThisFile(err);
 
           request(app)
@@ -548,7 +547,7 @@ describe('request(app)', function () {
         .get('/')
         .expect(/^bar/)
         .end(function (err, res) {
-          expect(err.message).toEqual('我想要的是 body \'foobar\' to match /^bar/')
+          expect(err.message).toEqual('expected body \'foobar\' to match /^bar/')
           shouldIncludeStackWithThisFile(err);
           done();
         });
@@ -567,7 +566,7 @@ describe('request(app)', function () {
         .expect('hey')
         .expect('hey tj')
         .end(function (err, res) {
-          expect(err.message).toEqual("我想要的是 'hey' response body, 但是你给了我 'hey tj'")
+          expect(err.message).toEqual("expected 'hey' response body, got 'hey tj'")
           shouldIncludeStackWithThisFile(err);
           done();
         });
@@ -600,7 +599,7 @@ describe('request(app)', function () {
         .get('/')
         .expect('Content-Foo', 'bar')
         .end(function (err, res) {
-          expect(err.message).toEqual('我想要的是 "Content-Foo" header field')
+          expect(err.message).toEqual('expected "Content-Foo" header field')
           shouldIncludeStackWithThisFile(err);
           done();
         });
@@ -617,8 +616,8 @@ describe('request(app)', function () {
         .get('/')
         .expect('Content-Type', 'text/html')
         .end(function (err, res) {
-          expect(err.message).toEqual('我想要的是 "Content-Type" of "text/html", '
-            + '但是你给了我 "application/json; charset=utf-8"')
+          expect(err.message).toEqual('expected "Content-Type" of "text/html", '
+            + 'got "application/json; charset=utf-8"')
           shouldIncludeStackWithThisFile(err);
           done();
         });
@@ -649,8 +648,8 @@ describe('request(app)', function () {
         .get('/')
         .expect('Content-Type', /^application/)
         .end(function (err) {
-          expect(err.message).toEqual('我想要的是 "Content-Type" matching /^application/, '
-            + '但是你给了我 "text/html; charset=utf-8"')
+          expect(err.message).toEqual('expected "Content-Type" matching /^application/, '
+            + 'got "text/html; charset=utf-8"')
           shouldIncludeStackWithThisFile(err);
           done();
         });
@@ -667,7 +666,7 @@ describe('request(app)', function () {
         .get('/')
         .expect('Content-Length', 4)
         .end(function (err) {
-          expect(err.message).toEqual('我想要的是 "Content-Length" of "4", 但是你给了我 "3"')
+          expect(err.message).toEqual('expected "Content-Length" of "4", got "3"')
           shouldIncludeStackWithThisFile(err);
           done();
         });
@@ -816,8 +815,8 @@ describe('request(app)', function () {
           .expect('Content-Type', /bloop/)
           .expect('Content-Type', /html/)
           .end(function (err) {
-            expect(err.message).toEqual('我想要的是 "Content-Type" matching /bloop/, '
-              + '但是你给了我 "text/html; charset=utf-8"')
+            expect(err.message).toEqual('expected "Content-Type" matching /bloop/, '
+              + 'got "text/html; charset=utf-8"')
             shouldIncludeStackWithThisFile(err);
             done();
           });
@@ -835,8 +834,8 @@ describe('request(app)', function () {
           .expect('Content-Type', /bloop/)
           .expect('Content-Type', /html/)
           .end(function (err) {
-            expect(err.message).toEqual('我想要的是 "Content-Type" matching /bloop/, '
-              + '但是你给了我 "text/html; charset=utf-8"')
+            expect(err.message).toEqual('expected "Content-Type" matching /bloop/, '
+              + 'got "text/html; charset=utf-8"')
             shouldIncludeStackWithThisFile(err);
             done();
           });
@@ -854,8 +853,8 @@ describe('request(app)', function () {
           .expect('Content-Type', /html/)
           .expect('Content-Type', /bloop/)
           .end(function (err) {
-            expect(err.message).toEqual('我想要的是 "Content-Type" matching /bloop/, '
-              + '但是你给了我 "text/html; charset=utf-8"')
+            expect(err.message).toEqual('expected "Content-Type" matching /bloop/, '
+              + 'got "text/html; charset=utf-8"')
             shouldIncludeStackWithThisFile(err);
             done();
           });
