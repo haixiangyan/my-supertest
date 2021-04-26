@@ -339,7 +339,7 @@ describe('request(app)', function () {
         request(url)
           .get('/')
           .expect(200, function (err) {
-            expect(err).toBeInstanceOf(Error)
+            expect(err.__proto__.name).toEqual('Error')
             return done();
           });
       });
