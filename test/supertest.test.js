@@ -339,7 +339,7 @@ describe('request(app)', function () {
         request(url)
           .get('/')
           .expect(200, function (err) {
-            expect(err instanceof Error).toBeTruthy()
+            expect(err).toBeInstanceOf(Error)
             return done();
           });
       });
@@ -707,7 +707,8 @@ describe('request(app)', function () {
               return 'some descriptive error';
             })
             .end(function (err) {
-              expect(err).toBeTruthy()
+              console.log('err', err)
+              expect(err).toBeFalsy()
               done();
             });
         }
