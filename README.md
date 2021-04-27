@@ -283,7 +283,7 @@ Test.prototype.end = function (fn) {
 
 ## 封装报错信息
 
-*再来看看我们是如何处理断言的：断言失败会走到 catch 语句并返回一个 Error，最后返回 Error 传入 `end(fn)` 的 `fn` 回调入参。但是这会有一个问题啊，我们看错误堆栈的时候就蒙逼了：
+再来看看我们是如何处理断言的：断言失败会走到 catch 语句并返回一个 Error，最后返回 Error 传入 `end(fn)` 的 `fn` 回调入参。但是这会有一个问题啊，我们看错误堆栈的时候就蒙逼了：
 
 ![](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/219088c02a5c4d7db23240c31b6db172~tplv-k3u1fbpfcp-zoom-1.image)
 
