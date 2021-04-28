@@ -2,6 +2,7 @@
 
 ![](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/1e2e85c107764fc7a8052eef62a7fa5a~tplv-k3u1fbpfcp-zoom-1.image)
 
+[![Build Status](https://www.travis-ci.com/Haixiang6123/my-supertest.svg?branch=main)](https://www.travis-ci.com/Haixiang6123/my-supertest)
 
 > 文章源码：https://github.com/Haixiang6123/my-supertest
 >
